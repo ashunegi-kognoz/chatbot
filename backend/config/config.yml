@@ -1,0 +1,21 @@
+models:
+  - type: main
+    engine: openai
+    model: gpt-4o
+  - type: content_safety
+    engine: nvidia_ai_endpoints
+    model: nvidia/llama-3.1-nemoguard-8b-content-safety
+
+rails:
+  input:
+    flows:
+      - check jailbreak
+      - check hallucination
+      - check harmful content
+      - check out of scope
+      - content safety check input $model=content_safety
+  output:
+    flows:
+      - check harmful content
+      - check hallucination
+      - content safety check output $model=content_safety

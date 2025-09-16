@@ -1,0 +1,53 @@
+# Env and secrets
+.env
+*.env
+
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.build/
+dist/
+build/
+pip-wheel-metadata/
+
+# Virtual envs
+venv/
+.envrc
+.python-version
+chatbot-env/
+.venv/
+
+# Test/coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+
+# Type-check / linters / tooling caches
+.mypy_cache/
+.pytype/
+.ruff_cache/
+.pyright/
+.dmypy.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+
+# Logs
+logs/
+*.log
+
+# Local data stores (persisted at runtime; don’t commit)
+chroma/
+chroma.sqlite3
+messages.json
+conversations.json
