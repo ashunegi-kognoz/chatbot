@@ -17,12 +17,12 @@ from .guardrails import guardrails
 
 load_dotenv()
 
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "https://chatbot-backend-2vrc.onrender.com")
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "https://chatbot-olive-eight-14.vercel.app/")
 app = FastAPI(title="Chatbot")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[FRONTEND_ORIGIN, "http://localhost:5173"],
     allow_methods=["*"],
     allow_headers=["*"]
 )
