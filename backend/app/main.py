@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 import json
-
+import os
 from .file_service import process_pdf_file, process_text_file, store_file_chunks
 from .schemas import ChatRequest, ChatResponse, FileUploadResponse, Conversation, Message
 from .llm_service import generate_embedding, generate_response, generate_response_stream
@@ -17,11 +17,12 @@ from .guardrails import guardrails
 
 load_dotenv()
 
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "https://your-frontend.vercel.app")
 app = FastAPI(title="Chatbot")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[FRONTEND_ORIGIN],
     allow_methods=["*"],
     allow_headers=["*"]
 )
