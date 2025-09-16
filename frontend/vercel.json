@@ -1,0 +1,5 @@
+{
+    "rewrites": [
+      { "source": "/api/(.*)", "destination": "https://chatbot-backend-2vrc.onrender.com" }
+    ]
+  }
