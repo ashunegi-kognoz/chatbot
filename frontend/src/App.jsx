@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { FaArrowRight } from "react-icons/fa"
+import { FaArrowRight } from "react-icons/fa";
+import Markdown from "react-markdown";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
@@ -216,7 +217,7 @@ export default function App() {
                         : 'bg-white border border-gray-200 rounded-bl-sm'
                       }`}
                   >
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                    <Markdown>{message.content}</Markdown>
                     <div className={`text-[11px] mt-1 ${message.role === 'user' ? 'text-teal-100' : 'text-gray-400'}`}>
                       {formatTime(message.created_at)}
                     </div>
