@@ -77,21 +77,29 @@ def chat(req: ChatRequest):
         matches = query_embeddings(q_emb, top_k=req.top_k, filter=None)
         context = build_context(matches)
 
-        # Get previous response ID for conversation threading
+        # Get previous response ID for conversation threading AND build limited history
         previous_response_id = None
+        history_text = ""
         if req.conversation_id:
             previous_response_id = get_last_assistant_response_id(req.conversation_id)
+            past = get_conversation_messages(req.conversation_id)
+            recent = past[-5:] if len(past) > 5 else past
+            history_text = "\n".join(
+                [("User: " if m.role == "user" else "Assistant: ") + m.content for m in recent]
+            )
 
-        # Generate response with conversation threading
-        answer, response_id = generate_response(req.query, context, previous_response_id)
+        # Generate response with conversation threading and history
+        answer, response_id = generate_response(req.query, context, previous_response_id, history=history_text)
 
-        # Create or get conversation
+        # Create or get conversation with enhanced error handling
         if req.conversation_id:
             conversation = get_conversation(req.conversation_id)
             if not conversation:
-                raise HTTPException(status_code=404, detail="Conversation not found")
+                # Auto create a new conversation if the provided ID is missing (like streaming version)
+                title = req.query[:50] + "..." if len(req.query) > 50 else req.query
+                conversation = create_conversation(title)
         else:
-            # Create new conversation with first few words of query as title
+            # Create new conversation
             title = req.query[:50] + "..." if len(req.query) > 50 else req.query
             conversation = create_conversation(title)
 
