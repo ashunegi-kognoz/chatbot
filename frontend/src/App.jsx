@@ -80,7 +80,7 @@ export default function App() {
     setMessages(prev => [...prev, tempUserMessage]);
 
     try {
-      const res = await fetch(`${API_BASE}/chat/stream`, {
+      const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,76 +89,26 @@ export default function App() {
           top_k: 5,
         }),
       });
-
-      if (!res.ok) throw new Error("Request failed");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let conversationId = null;
-      let userMessageId = null;
-      let assistantMessageId = null;
-      let assistantContent = "";
-      let tempAssistantMessageId = `temp-assistant-${Date.now()}`;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (data.conversation_id) {
-                conversationId = data.conversation_id;
-                userMessageId = data.user_message_id;
-                setCurrentConversationId(conversationId);
-                localStorage.setItem("conversationId", conversationId);
-
-                setMessages(prev => {
-                  const filtered = prev.filter(msg => msg.id !== tempUserMessage.id);
-                  return [
-                    ...filtered,
-                    { id: userMessageId, role: "user", content: userMessage, created_at: new Date().toISOString() }
-                  ];
-                });
-              }
-
-              if (data.content !== undefined) {
-                if (data.done) {
-                  assistantMessageId = data.message_id;
-                  setMessages(prev => {
-                    const filtered = prev.filter(msg => msg.id !== tempAssistantMessageId);
-                    return [
-                      ...filtered,
-                      { id: assistantMessageId, role: "assistant", content: assistantContent, created_at: new Date().toISOString() }
-                    ];
-                  });
-                } else {
-                  assistantContent += data.content;
-                  setMessages(prev => {
-                    const filtered = prev.filter(msg => msg.id !== tempAssistantMessageId);
-                    return [
-                      ...filtered,
-                      { id: tempAssistantMessageId, role: "assistant", content: assistantContent, created_at: new Date().toISOString() }
-                    ];
-                  });
-                }
-              }
-            } catch (e) {
-              console.error("Error parsing stream data:", e);
-            }
-          }
-        }
-      }
+    
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || "Request failed");
+    
+      // Save/refresh conversation id
+      setCurrentConversationId(data.conversation_id);
+      localStorage.setItem("conversationId", data.conversation_id);
+    
+      // Replace temp user with a final user bubble (optional), or just leave it
+      setMessages(prev => {
+        const filtered = prev.filter(msg => msg.id !== tempUserMessage.id);
+        return [
+          ...filtered,
+          { id: `user-${Date.now()}`, role: "user", content: userMessage, created_at: new Date().toISOString() },
+          { id: data.message_id, role: "assistant", content: data.answer, created_at: new Date().toISOString() }
+        ];
+      });
     } catch (e) {
       setError(e.message);
-      setMessages(prev => prev.filter(msg =>
-        !msg.id.startsWith("temp-") && !msg.id.startsWith("temp-assistant-")
-      ));
+      setMessages(prev => prev.filter(msg => !msg.id.startsWith("temp-")));
     } finally {
       setLoading(false);
     }

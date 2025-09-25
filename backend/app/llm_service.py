@@ -109,7 +109,7 @@ def generate_response_stream(
     from .guardrails import guardrails
     
     # Check input safety first
-    is_safe, safety_message, safety_result = guardrails.check_input_safety(query)
+    is_safe, safety_message, _input_safety_details = guardrails.check_input_safety(query)
     
     if not is_safe:
         yield {"type": "content", "content": safety_message}
@@ -165,7 +165,7 @@ def generate_response_stream(
                 yield {"type": "content", "content": event.delta}
         
         # Check output safety after streaming is complete
-        is_output_safe, output_safety_message, output_safety_result = guardrails.check_output_safety(full_response)
+        is_output_safe, _output_safety_message, _output_safety_result = guardrails.check_output_safety(full_response)
         
         if not is_output_safe:
             # Replace the response with a safe one
@@ -200,25 +200,29 @@ def generate_response(
     if not is_safe:
         return safety_message, ""
     
-    # Build the input with context
-    instructions = f"""You are an expert assistant helping learners with tasks.
-    Use only the provided context, don't give answer outside of that. 
-    If the query is irrelevant or inappropriate, politely refuse.
-    
-    Context from documents:
-    {context}"""
-    
+    # Build the input to mirror streaming version: structured system + user content with history and context
+    system_message = {
+        "role": "system",
+        "content": build_foundational_system_prompt()
+    }
+
     input_content = [
+        system_message,
         {
             "role": "user",
-            "content": f"Context:\n{context}\n\nQuery:\n{query}\n\nAnswer:"
+            "content": (
+                f"Conversation history (most recent last):\n{history}\n\n"
+                f"Context:\n{context}\n\n"
+                f"Query:\n{query}\n\n"
+                f"Answer:"
+            )
         }
     ]
     
     # Create response with optional previous_response_id
     response_params = {
         "model": model,
-        "instructions": instructions,
+        "instructions": "Follow the system message strictly. Prefer the given context and history; do not invent missing details.",
         "input": input_content,
         "max_output_tokens": 1000
     }
@@ -230,7 +234,7 @@ def generate_response(
     response_text = response.output_text.strip()
     
     # Check output safety
-    is_output_safe, output_safety_message, output_safety_result = guardrails.check_output_safety(response_text)
+    is_output_safe, _output_safety_message, _output_safety_result = guardrails.check_output_safety(response_text)
     
     if not is_output_safe:
         response_text = guardrails.get_safe_response(response_text)
