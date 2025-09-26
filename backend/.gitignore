@@ -47,7 +47,5 @@ logs/
 *.log
 
 # Local data stores (persisted at runtime; don’t commit)
-chroma/
-chroma.sqlite3
 messages.json
 conversations.json
