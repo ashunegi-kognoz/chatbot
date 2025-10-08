@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaArrowRight } from "react-icons/fa";
+import { FaArrowRight, FaArrowUp } from "react-icons/fa";
 import Markdown from "react-markdown";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
@@ -317,10 +317,11 @@ export default function App() {
                 <button
                   onClick={sendMessage}
                   disabled={loading || !input.trim()}
-                  className="flex self-end items-center space-x-2 text-white px-4 py-2 rounded-full hover:cursor-pointer border-black border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  // className="flex self-end items-center space-x-2 text-white px-4 py-2 rounded-full hover:cursor-pointer border-black border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex self-end items-center space-x-2 text-white px-4 py-2 rounded-full hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="text-black">Send</span>
-                  <span className="inline-flex items-center justify-center w-6 h-6 bg-teal-500 rounded-full"><FaArrowRight size={12} /></span>
+                  {/* <span className="text-black">Send</span> */}
+                  <span className="inline-flex items-center justify-center w-6 h-6 bg-teal-500 rounded-full"><FaArrowUp size={12} /></span>
                 </button>
               </div>
             </div>
