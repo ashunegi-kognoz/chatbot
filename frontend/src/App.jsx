@@ -128,6 +128,64 @@ export default function App() {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Suggestion questions that will always be visible
+  const suggestionQuestions = [
+    "What can this chatbot help me with?",
+    "What kind of questions can I ask?",
+    "How does the Foundational Learning Program work?",
+  ];
+
+  // Handle suggestion question click
+  const handleSuggestionClick = async (question) => {
+    if (loading) return;
+
+    setInput("");
+    setLoading(true);
+    setError("");
+
+    const tempUserMessage = {
+      id: `temp-${Date.now()}`,
+      role: "user",
+      content: question,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, tempUserMessage]);
+
+    try {
+      const res = await fetch(`${API_BASE}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: question,
+          conversation_id: currentConversationId,
+          top_k: 12,
+        }),
+      });
+    
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || "Request failed");
+    
+      // Save/refresh conversation id
+      setCurrentConversationId(data.conversation_id);
+      localStorage.setItem("conversationId", data.conversation_id);
+    
+      // Replace temp user with a final user bubble
+      setMessages(prev => {
+        const filtered = prev.filter(msg => msg.id !== tempUserMessage.id);
+        return [
+          ...filtered,
+          { id: `user-${Date.now()}`, role: "user", content: question, created_at: new Date().toISOString() },
+          { id: data.message_id, role: "assistant", content: data.answer, created_at: new Date().toISOString() }
+        ];
+      });
+    } catch (e) {
+      setError(e.message);
+      setMessages(prev => prev.filter(msg => !msg.id.startsWith("temp-")));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 pointer-events-none">
       {/* Launcher when closed */}
@@ -151,7 +209,7 @@ export default function App() {
             </div>
             <div className="flex items-center space-x-2">
               {/* File Upload Button */}
-              <label 
+              {/* <label 
                 className={`px-3 py-1 text-xs rounded-full cursor-pointer transition-colors ${
                   uploading 
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
@@ -166,7 +224,7 @@ export default function App() {
                   disabled={uploading}
                   className="hidden"
                 />
-              </label>
+              </label> */}
               <button
                 onClick={() => setOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -178,9 +236,10 @@ export default function App() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white border border-teal-400 rounded-lg">
+          <div className="relative flex-1 overflow-y-auto py-2 space-y-2 px-4 bg-white border border-teal-400 rounded-lg">
+            {/* Chat Messages */}
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-600">
+              <div className="flex flex-col h-full items-center justify-center text-gray-600 mb-6">
                 <img src="/assets/ai_stars.svg" alt="ai stars" className="self-start pl-6" />
                 <p className="text-lg font-medium">Hi, What can I help you with?</p>
               </div>
@@ -204,6 +263,8 @@ export default function App() {
                 </div>
               ))
             )}
+            
+            {/* Loading indicator */}
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-white border border-gray-200 px-4 py-2 rounded-2xl">
@@ -215,6 +276,8 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            
             <div ref={messagesEndRef} />
           </div>
 
@@ -225,6 +288,23 @@ export default function App() {
 
             <div className="flex items-end">
               <div className="p-4 rounded-lg flex flex-col justify-between items-center w-full border border-teal-400 ">
+                {/* Suggestion Questions - Inside input box */}
+                <div className="w-full mb-3">
+                  <p className="text-xs font-medium text-gray-500 mb-2">💡 Quick Questions:</p>
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {suggestionQuestions.map((question, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSuggestionClick(question)}
+                        disabled={loading}
+                        className="flex-shrink-0 px-3 py-1.5 text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <textarea
                   rows={2}
                   value={input}
