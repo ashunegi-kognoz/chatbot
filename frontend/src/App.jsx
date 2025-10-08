@@ -9,7 +9,7 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [open, setOpen] = useState(true);
@@ -40,28 +40,38 @@ export default function App() {
     }
   }, []);
 
-  // const handleFileUpload = async (event) => {
-  //   const file = event.target.files[0];
-  //   if (!file) return;
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  //   setUploading(true);
-  //   setError("");
-  //   setUploadMessage("");
+    // Check file type
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (fileExtension !== 'txt') {
+      setError("Please upload only .txt files");
+      return;
+    }
 
-  //   const formData = new FormData();
-  //   formData.append("file", file);
+    setUploading(true);
+    setError("");
+    setUploadMessage("");
 
-  //   try {
-  //     const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
-  //     const data = await res.json();
-  //     if (!res.ok) throw new Error(data?.detail || "Upload failed");
-  //     setUploadMessage(`✅ ${data?.message} (${data?.chunks_added} chunks added)`);
-  //   } catch (e) {
-  //     setError(e.message);
-  //   } finally {
-  //     setUploading(false);
-  //   }
-  // };
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || "Upload failed");
+      setUploadMessage(`✅ ${data?.message} (${data?.chunks_added} chunks added)`);
+      
+      // Clear upload message after 5 seconds
+      setTimeout(() => setUploadMessage(""), 5000);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -86,7 +96,7 @@ export default function App() {
         body: JSON.stringify({
           query: userMessage,
           conversation_id: currentConversationId,
-          top_k: 5,
+          top_k: 12,
         }),
       });
     
@@ -139,13 +149,32 @@ export default function App() {
               <img src="/assets/ai_small_stars.svg" alt="ai small stars" />              
               <h2 className="text-teal-500 font-semibold">Ask Me Anything!</h2>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-gray-500 hover:text-gray-700"
-              aria-label="Close"
-            >
-              ✕
-            </button>
+            <div className="flex items-center space-x-2">
+              {/* File Upload Button */}
+              <label 
+                className={`px-3 py-1 text-xs rounded-full cursor-pointer transition-colors ${
+                  uploading 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-teal-100 text-teal-600 hover:bg-teal-200'
+                }`}
+              >
+                {uploading ? '⏳ Uploading...' : '📄 Upload TXT'}
+                <input
+                  type="file"
+                  accept=".txt"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {/* Messages Area */}
