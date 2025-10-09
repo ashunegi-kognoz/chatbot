@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-import { FaArrowRight, FaArrowUp } from "react-icons/fa";
+import { FaArrowRight, FaArrowUp, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Markdown from "react-markdown";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+
+  // Suggestion questions that will always be visible
+  const suggestionQuestions = [
+    "What kind of questions can I ask?",
+    "How does the Foundational Learning Program work?",
+    "How do I get started with the program?",
+    "What support is available?",
+    "Can you explain the assessment process?",
+  ];
 
 export default function App() {
   const [messages, setMessages] = useState([]);
@@ -13,12 +22,45 @@ export default function App() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [open, setOpen] = useState(true);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const suggestionsScrollRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Check scroll position for suggestion buttons
+  const checkScrollButtons = () => {
+    if (suggestionsScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = suggestionsScrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  // Scroll functions
+  const scrollLeft = () => {
+    if (suggestionsScrollRef.current) {
+      suggestionsScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (suggestionsScrollRef.current) {
+      suggestionsScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
+
+  // Check scroll buttons on component mount and when suggestions change
+  useEffect(() => {
+    checkScrollButtons();
+    const handleResize = () => checkScrollButtons();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [suggestionQuestions]);
 
   useEffect(() => {
     const savedId = localStorage.getItem("conversationId");
@@ -128,12 +170,7 @@ export default function App() {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Suggestion questions that will always be visible
-  const suggestionQuestions = [
-    "What can this chatbot help me with?",
-    "What kind of questions can I ask?",
-    "How does the Foundational Learning Program work?",
-  ];
+
 
   // Handle suggestion question click
   const handleSuggestionClick = async (question) => {
@@ -290,18 +327,59 @@ export default function App() {
               <div className="p-4 rounded-lg flex flex-col justify-between items-center w-full border border-teal-400 ">
                 {/* Suggestion Questions - Inside input box */}
                 <div className="w-full mb-3">
-                  <p className="text-xs font-medium text-gray-500 mb-2">💡 Quick Questions:</p>
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {suggestionQuestions.map((question, index) => (
+                  <p className="text-xs font-medium text-gray-500 mb-2">💡 Suggestions </p>
+                  <div className="relative">
+                    {/* Left fade overlay */}
+                    {canScrollLeft && (
+                      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+                    )}
+                    
+                    {/* Right fade overlay */}
+                    {canScrollRight && (
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+                    )}
+                    
+                    {/* Left scroll button */}
+                    {canScrollLeft && (
                       <button
-                        key={index}
-                        onClick={() => handleSuggestionClick(question)}
-                        disabled={loading}
-                        className="flex-shrink-0 px-3 py-1.5 text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        onClick={scrollLeft}
+                        className="absolute left-1 top-1/2 transform -translate-y-[70%] z-20 bg-white border border-teal-200 rounded-full p-1.5 shadow-sm hover:bg-teal-50 transition-colors"
+                        aria-label="Scroll left"
                       >
-                        {question}
+                        <FaChevronLeft className="w-3 h-3 text-teal-600" />
                       </button>
-                    ))}
+                    )}
+                    
+                    {/* Right scroll button */}
+                    {canScrollRight && (
+                      <button
+                        onClick={scrollRight}
+                        className="absolute right-1 top-1/2 transform -translate-y-[70%] z-20 bg-white border border-teal-200 rounded-full p-1.5 shadow-sm hover:bg-teal-50 transition-colors"
+                        aria-label="Scroll right"
+                      >
+                        <FaChevronRight className="w-3 h-3 text-teal-600" />
+                      </button>
+                    )}
+                    
+                    <div 
+                      ref={suggestionsScrollRef}
+                      className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                      onScroll={checkScrollButtons}
+                      style={{ 
+                        scrollBehavior: 'smooth'
+                      }}
+                    >
+                      {suggestionQuestions.map((question, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSuggestionClick(question)}
+                          disabled={loading}
+                          className="flex-shrink-0 px-3 py-1.5 text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
