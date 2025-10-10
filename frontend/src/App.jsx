@@ -9,8 +9,6 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
     "What kind of questions can I ask?",
     "How does the Foundational Learning Program work?",
     "How do I get started with the program?",
-    "What support is available?",
-    "Can you explain the assessment process?",
   ];
 
 export default function App() {
